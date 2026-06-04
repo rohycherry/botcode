@@ -38,11 +38,19 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// সেন্টার ক্রপ ফাংশন
+// সেন্টার ক্রপ ফাংশন (হাই কোয়ালিটি)
 function centerCrop(img, targetWidth, targetHeight) {
     return new Promise((resolve) => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
+        
+        // হাই কোয়ালিটি রেন্ডারিং এর জন্য সেটিংস
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // ইমেজ স্মুথিং কোয়ালিটি ম্যাক্সিমাম সেট করা
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         
         let sourceX = 0;
         let sourceY = 0;
@@ -62,14 +70,12 @@ function centerCrop(img, targetWidth, targetHeight) {
             sourceY = (img.height - sourceHeight) / 2;
         }
         
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        
         ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
         
+        // হাই কোয়ালিটি WebP (98% কোয়ালিটি - প্রায় লসলেস)
         canvas.toBlob((blob) => {
             resolve(blob);
-        }, 'image/webp', 0.92);
+        }, 'image/webp', 0.98);  // 0.98 মানে 98% কোয়ালিটি (পূর্বে ছিল 0.92)
     });
 }
 
@@ -81,10 +87,10 @@ async function processImage(imageFile, imageId) {
         
         img.onload = async () => {
             try {
-                // স্কয়ার ইমেজ (1:1, 300x300)
+                // স্কয়ার ইমেজ (1:1, 300x300) - হাই কোয়ালিটি
                 const squareBlob = await centerCrop(img, 300, 300);
                 
-                // ল্যান্ডস্কেপ ইমেজ (4:3, 720x540)
+                // ল্যান্ডস্কেপ ইমেজ (4:3, 720x540) - হাই কোয়ালিটি
                 const landscapeBlob = await centerCrop(img, 720, 540);
                 
                 URL.revokeObjectURL(url);
@@ -199,10 +205,10 @@ function renderGallery() {
                     <label><i class="fas fa-crop"></i> Processed Outputs</label>
                     <div class="output-actions">
                         <button class="btn-download" onclick="downloadImage('${item.square.url}', '${item.square.name}')">
-                            <i class="fas fa-square"></i> Square (300x300)
+                            <i class="fas fa-square"></i> Square (300x300) - ${formatFileSize(item.square.size)}
                         </button>
                         <button class="btn-download" onclick="downloadImage('${item.landscape.url}', '${item.landscape.name}')">
-                            <i class="fas fa-image"></i> 4:3 (720x540)
+                            <i class="fas fa-image"></i> 4:3 (720x540) - ${formatFileSize(item.landscape.size)}
                         </button>
                     </div>
                 </div>
@@ -317,4 +323,4 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-console.log('Image Processor Ready! 🎉');
+console.log('Image Processor Ready! 🎉 (High Quality Mode - 98%)');
