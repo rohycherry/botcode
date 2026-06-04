@@ -38,19 +38,18 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// সেন্টার ক্রপ ফাংশন (হাই কোয়ালিটি)
+// সেন্টার ক্রপ ফাংশন (ব্যালেন্সড কোয়ালিটি - ফাইল সাইজ কম)
 function centerCrop(img, targetWidth, targetHeight) {
     return new Promise((resolve) => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // হাই কোয়ালিটি রেন্ডারিং এর জন্য সেটিংস
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         
-        // ইমেজ স্মুথিং কোয়ালিটি ম্যাক্সিমাম সেট করা
+        // ইমেজ স্মুথিং কোয়ালিটি মিডিয়াম (সাইজ কমানোর জন্য)
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingQuality = 'medium';  // 'high' থেকে 'medium' করলাম
         
         let sourceX = 0;
         let sourceY = 0;
@@ -61,21 +60,19 @@ function centerCrop(img, targetWidth, targetHeight) {
         const imgRatio = img.width / img.height;
         
         if (imgRatio > targetRatio) {
-            // ইমেজ বেশি চওড়া - width crop করতে হবে
             sourceWidth = img.height * targetRatio;
             sourceX = (img.width - sourceWidth) / 2;
         } else {
-            // ইমেজ বেশি লম্বা - height crop করতে হবে
             sourceHeight = img.width / targetRatio;
             sourceY = (img.height - sourceHeight) / 2;
         }
         
         ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
         
-        // হাই কোয়ালিটি WebP (98% কোয়ালিটি - প্রায় লসলেস)
+        // 85% কোয়ালিটি (ফাইল সাইজ কমানোর জন্য)
         canvas.toBlob((blob) => {
             resolve(blob);
-        }, 'image/webp', 0.98);  // 0.98 মানে 98% কোয়ালিটি (পূর্বে ছিল 0.92)
+        }, 'image/webp', 0.85);  // 85% কোয়ালিটি
     });
 }
 
@@ -87,10 +84,7 @@ async function processImage(imageFile, imageId) {
         
         img.onload = async () => {
             try {
-                // স্কয়ার ইমেজ (1:1, 300x300) - হাই কোয়ালিটি
                 const squareBlob = await centerCrop(img, 300, 300);
-                
-                // ল্যান্ডস্কেপ ইমেজ (4:3, 720x540) - হাই কোয়ালিটি
                 const landscapeBlob = await centerCrop(img, 720, 540);
                 
                 URL.revokeObjectURL(url);
@@ -247,7 +241,6 @@ function clearAll() {
         return;
     }
     
-    // ক্লিনআপ URL অবজেক্ট
     for (const item of processedOutputs) {
         URL.revokeObjectURL(item.originalUrl);
         URL.revokeObjectURL(item.square.url);
@@ -283,8 +276,6 @@ function handleFiles(files) {
     
     images.push(...validFiles);
     updateStats();
-    
-    // অটো প্রসেসিং শুরু
     processAllImages();
 }
 
@@ -315,7 +306,6 @@ fileInput.addEventListener('change', (e) => {
 
 clearAllBtn.addEventListener('click', clearAll);
 
-// কীবোর্ড শর্টকাট
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'Delete') {
         e.preventDefault();
@@ -323,4 +313,4 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-console.log('Image Processor Ready! 🎉 (High Quality Mode - 98%)');
+console.log('Image Processor Ready! 🎉 (85% Quality - Balanced Size)');
